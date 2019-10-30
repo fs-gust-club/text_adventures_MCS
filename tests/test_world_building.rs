@@ -1,19 +1,13 @@
-use text_adventure::world_building::{World, Room, Item};
-
-#[test]
-fn test_add_room() {
-    assert_eq!(true, true);
-}
+use text_adventure::world_building::{Item, Room, World};
 
 #[test]
 fn test_add_exit() {
     // Arrange
-    let victim = Room::new("id".to_string(), "description".to_string());
+    let mut victim = Room::new("id".to_string(), "description".to_string());
 
     // Act
-    victim.add_exit("direction", "room");
-    let result = victim.get_exits().any("direction".to_string().as_ref());
-    
+    victim.add_exit("direction".to_string(), "room".to_string());
+    let result = victim.get_exits().any(|s| s == "direction");
     // Assert
     assert_eq!(result, true);
 }

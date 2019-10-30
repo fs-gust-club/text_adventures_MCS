@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 use itertools::Itertools;
+use log_derive::{logfn, logfn_inputs};
+use std::collections::HashMap;
 
 #[derive(Default, Debug)]
 pub struct World {
@@ -12,12 +13,15 @@ impl World {
         self.locations.insert(location.id.clone(), location);
     }
 
+    #[logfn(Info)]
+    #[logfn_inputs(Info)]
     pub fn move_player(&mut self, direction: &String) -> Result<String, String> {
         // Check whether our current location has an exit that matches direction.
         // If so, set the payers location to the pointed direction.
         // returns a result with Ok(new_location), Err(No Exit)
 
         let current_location = self.locations.get(&self.player_location).unwrap();
+        warn!("Found location: {}", current_location.id);
 
         match current_location.exits.get(direction) {
             Some(room_id) => {
@@ -36,7 +40,7 @@ impl World {
 #[derive(Debug, new)]
 pub struct Room {
     pub id: String,
-    pub description: String,    
+    pub description: String,
     #[new(default)]
     exits: HashMap<String, String>,
     #[new(default)]
@@ -47,7 +51,7 @@ impl<'a> Room {
     pub fn add_exit(&mut self, command: String, exit_id: String) {
         self.exits.insert(command, exit_id);
     }
-    
+
     pub fn get_exits(&self) -> impl Iterator<Item = &String> {
         self.exits.keys()
     }
@@ -66,14 +70,20 @@ impl<'a> Room {
 
     pub fn get_full_description(&self) -> String {
         let mut output = String::new();
-        let description = format!("\n{location_description}", location_description = self.description);
+        let description = format!(
+            "\n{location_description}",
+            location_description = self.description
+        );
         output.push_str(&description);
-            
-        let exits = format!("\nExits are {exits}", exits =self.get_exits().join(", "));
+
+        let exits = format!("\nExits are {exits}", exits = self.get_exits().join(", "));
         output.push_str(&exits);
 
-        if self.has_items() {            
-            let items = format!("\nItems are {item_names}", item_names = self.get_item_names().join(", "));
+        if self.has_items() {
+            let items = format!(
+                "\nItems are {item_names}",
+                item_names = self.get_item_names().join(", ")
+            );
             output.push_str(&items);
         }
 
@@ -104,15 +114,15 @@ pub struct Item {
     pub name: String,
 }
 
-macro_rules! shaper_of_worlds { 
+macro_rules! shaper_of_worlds {
     (
         location = $player_location:expr,
         rooms = [
             $([
                 $room_name:expr,
-                $room_description:expr, 
+                $room_description:expr,
                 items=[$($item:expr$(,)*)*],
-                exits=[$($dir:expr => $dest:expr)*]   
+                exits=[$($dir:expr => $dest:expr)*]
             ])+
         ]
     ) => {

@@ -1,14 +1,13 @@
 #[macro_use]
 extern crate derive_new;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 pub mod world_building;
 
-#[macro_use]
-extern crate log;
-
-use crate::world_building::{Item, Room, World};
 use std::io::{self};
+use world_building::*;
 
 pub fn start() {
     let mut world = let_there_be_light();
@@ -47,12 +46,12 @@ pub fn start() {
 }
 
 fn let_there_be_light() -> World {
-    shaper_of_worlds!(
+    let mut world = shaper_of_worlds!(
         location = "A",
         rooms = [
             [
                 "A",
-                "This is A",
+                "The dungeon entrance",
                 items = ["Stick", "Stone"],
                 exits = ["north" => "B" "west" => "c"]
             ]
@@ -68,14 +67,21 @@ fn let_there_be_light() -> World {
                 items = [],
                 exits = ["east" => "A"]
             ]
-        ]
-    )
+        ]        
+    );
+
+    let player = Player::new("Bob".to_string());
+    world.player = player;
+    return world;
 }
 
 fn perform_action(world: &mut World, user_intput: &str) -> Result<String, String> {
     let cased = user_intput.to_lowercase().trim().to_string();
+
     match cased.as_ref() {
         "exit" => Err("Exiting".to_string()),
+        "save" => world.save_state(),
+        "load" => world.load_state(),
         _ => match world.move_player(&cased) {
             Ok(message) => Ok(message),
             Err(message) => Ok(message),

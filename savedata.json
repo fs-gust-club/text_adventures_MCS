@@ -1,0 +1,1 @@
+{"locations":{"b":{"id":"b","description":"This is B","exits":{"south":"a"},"items":[]},"c":{"id":"c","description":"This is C","exits":{"east":"a"},"items":[]},"a":{"id":"a","description":"The dungeon entrance","exits":{"west":"c","north":"b"},"items":[{"name":"Stick"},{"name":"Stone"}]}},"player_location":"b","player":{"name":"Bob","inventory":[]}}

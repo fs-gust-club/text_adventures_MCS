@@ -3,11 +3,11 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [  
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'text_adventure'",
+            "name": "Debug (Linux) executable 'text_adventure'",
             "cargo": {
                 "args": [
                     "build",
@@ -20,12 +20,12 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}"            
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'text_adventure'",
+            "name": "Debug (Linux) unit tests in executable 'text_adventure'",
             "cargo": {
                 "args": [
                     "test",

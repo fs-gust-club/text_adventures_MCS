@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug (Linux) executable 'text_adventure'",
+            "name": "Debug executable 'text_adventure'",
             "cargo": {
                 "args": [
                     "build",
@@ -20,12 +20,12 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"            
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug (Linux) unit tests in executable 'text_adventure'",
+            "name": "Debug unit tests in executable 'text_adventure'",
             "cargo": {
                 "args": [
                     "test",

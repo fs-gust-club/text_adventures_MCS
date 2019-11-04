@@ -9,6 +9,7 @@ pub mod world_building;
 use std::io::{self};
 use world_building::*;
 
+/// Create the world and start the main loop
 pub fn start() {
     let mut world = let_there_be_light();
 
@@ -45,6 +46,7 @@ pub fn start() {
     }
 }
 
+/// Create the initial world state
 fn let_there_be_light() -> World {
     let mut world = shaper_of_worlds!(
         location = "A",
@@ -75,6 +77,16 @@ fn let_there_be_light() -> World {
     return world;
 }
 
+/// Parse the user input and perform the action if possible
+/// 
+/// # Arguments
+/// 
+/// * `world` - the current world state
+/// * `user_input` - the user command
+/// 
+/// # Errors
+/// 
+/// The user command is not valid
 fn perform_action(world: &mut World, user_intput: &str) -> Result<String, String> {
     let cased = user_intput.to_lowercase().trim().to_string();
 

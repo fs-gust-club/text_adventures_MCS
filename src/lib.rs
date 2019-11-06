@@ -5,9 +5,11 @@ extern crate log;
 
 #[macro_use]
 pub mod world_building;
+pub mod parser;
 
 use std::io::{self};
 use world_building::*;
+use parser::*;
 
 /// Create the world and start the main loop
 pub fn start() {
@@ -87,16 +89,23 @@ fn let_there_be_light() -> World {
 /// # Errors
 /// 
 /// The user command is not valid
-fn perform_action(world: &mut World, user_intput: &str) -> Result<String, String> {
-    let cased = user_intput.to_lowercase().trim().to_string();
+fn perform_action(world: &mut World, user_input: &str) -> Result<String, String> {
+    let action = parser::parse_input(user_input);    
+    match action {
+        parser::Action::Exit => Err("Exiting".to_string()),
+        Action::Save => world.save_state(),
+        Action::Load => world.load_state(),
+        Action::Inventory => Ok(world.player.list_inventory()),
+        Action::Move(direction) => acceptable_error(world.move_player(&direction)),
+        Action::Take(item_name) => acceptable_error(world.take_item(&*item_name)),
+        Action::Unknown => Ok("You cannot do that".to_string()),
+        _ => Ok("You cannot do that".to_string())
+    }    
+}
 
-    match cased.as_ref() {
-        "exit" => Err("Exiting".to_string()),
-        "save" => world.save_state(),
-        "load" => world.load_state(),
-        _ => match world.move_player(&cased) {
-            Ok(message) => Ok(message),
-            Err(message) => Ok(message),
-        },
+fn acceptable_error(error: Result<String, String>) -> Result<String, String> {
+    match error {
+        Ok(msg) => Ok(msg),
+        Err(msg) => Err(msg)
     }
 }

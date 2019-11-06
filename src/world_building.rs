@@ -57,9 +57,9 @@ impl World {
         }
     }
 
-    /// Gets the room the player is currently in    
-    pub fn get_player_room(&mut self) -> Option<&Room> {
-        self.locations.get(&self.player_location)
+    /// Gets a mutable reference to the room the player is currently in    
+    pub fn get_player_room(&mut self) -> Option<&mut Room> {
+        self.locations.get_mut(&self.player_location)
     }
 
     /// Save the state of the game to a local file
@@ -107,6 +107,27 @@ impl World {
                 Err(format!("{:?}", err))
             }
         }
+    }
+
+    /// Take the specified item from the players current location
+    ///  
+    /// # Arguments
+    ///
+    /// * `item_name` - the name of the item to take 
+    pub fn take_item(&mut self, item_name :&str) -> Result<String, String> {
+        match self.get_player_room() {
+            Some(room) => {
+                match room.items.iter().position(|i| i.name.to_lowercase() == item_name.to_lowercase()) {
+                    Some(index) => {                        
+                        let item = room.items.remove(index);
+                        self.player.inventory.push(item);                     
+                        return Ok(format!("Picked up {}", item_name));
+                    },
+                    None => Err(format!("No item of type {} is present", item_name)),
+                }
+            },
+            None => Err("Room does not exist".to_string())
+        }                          
     }
 }
 
@@ -225,6 +246,17 @@ pub struct Player {
     /// The items the player is carrying
     #[new(default)]
     pub inventory: Vec<Item>,
+}
+
+/// Lists the inventory currently carried by the player
+impl Player {
+    pub fn list_inventory(&self) -> String {        
+        self.inventory.iter().fold(String::new(), |mut agg, item| { 
+                agg.push_str(&*item.name);
+                agg.push_str("\n");
+                agg 
+        })
+    }
 }
 
 /// An item

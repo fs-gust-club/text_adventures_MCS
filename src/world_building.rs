@@ -5,19 +5,17 @@
 
 use itertools::Itertools;
 use log_derive::{logfn, logfn_inputs};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use serde::{Deserialize, Serialize};
 
 /// Holds the state of the world
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct World {
     /// The rooms making up the world, stored by Room.id
     pub locations: HashMap<String, Room>,
-    
     /// The id of the current player's location
     pub player_location: String,
-    
     /// The player
     pub player: Player,
 }
@@ -29,12 +27,12 @@ impl World {
     }
 
     /// Move the player to a new location
-    /// 
+    ///
     /// # Arguments
     ///     
     /// * `direction` - A name that corresponds to the name of an exit from the
     /// players current location
-    /// 
+    ///
     /// # Errors
     /// The location is invalid
     #[logfn(Info)]
@@ -44,7 +42,8 @@ impl World {
         // If so, set the payers location to the pointed direction.
         // returns a result with Ok(new_location), Err(No Exit)
 
-        let new_room = self.locations
+        let new_room = self
+            .locations
             .get(&self.player_location)
             .and_then(|cl| cl.exits.get(direction));
 
@@ -63,7 +62,7 @@ impl World {
     }
 
     /// Save the state of the game to a local file
-    /// 
+    ///
     /// # Errors
     /// Could not save the game
     #[logfn(Info)]
@@ -84,25 +83,25 @@ impl World {
     }
 
     /// Load the state of the game from a local file
-    /// 
+    ///
     /// # Errors
     /// Could not load the game
     #[logfn(Info)]
     pub fn load_state(&mut self) -> Result<String, String> {
         match fs::read_to_string("savedata.json") {
             Ok(contents) => match serde_json::from_str::<World>(&*contents) {
-                Ok(new_world) => { 
+                Ok(new_world) => {
                     self.locations = new_world.locations;
                     self.player = new_world.player;
                     self.player_location = new_world.player_location;
                     Ok("game loaded".to_string())
-                },
-                Err(err) => { 
+                }
+                Err(err) => {
                     error!("Error loading game {:?}", err);
                     Err("could not load game".to_string())
                 }
             },
-            Err(err) => { 
+            Err(err) => {
                 error!("Error deserializing game state {:?}", err);
                 Err(format!("{:?}", err))
             }
@@ -113,21 +112,25 @@ impl World {
     ///  
     /// # Arguments
     ///
-    /// * `item_name` - the name of the item to take 
-    pub fn take_item(&mut self, item_name :&str) -> Result<String, String> {
+    /// * `item_name` - the name of the item to take
+    pub fn take_item(&mut self, item_name: &str) -> Result<String, String> {
         match self.get_player_room() {
             Some(room) => {
-                match room.items.iter().position(|i| i.name.to_lowercase() == item_name.to_lowercase()) {
-                    Some(index) => {                        
+                match room
+                    .items
+                    .iter()
+                    .position(|i| i.name.to_lowercase() == item_name.to_lowercase())
+                {
+                    Some(index) => {
                         let item = room.items.remove(index);
-                        self.player.inventory.push(item);                     
+                        self.player.inventory.push(item);
                         return Ok(format!("Picked up {}", item_name));
-                    },
+                    }
                     None => Err(format!("No item of type {} is present", item_name)),
                 }
-            },
-            None => Err("Room does not exist".to_string())
-        }                          
+            }
+            None => Err("Room does not exist".to_string()),
+        }
     }
 }
 
@@ -139,19 +142,17 @@ pub struct Room {
 
     /// The description of the Room the player will see
     pub description: String,
-    
     #[new(default)]
     exits: HashMap<String, String>,
-    
     #[new(default)]
     items: Vec<Item>,
 }
 
 impl<'a> Room {
     /// Add an exit to the room
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `direction` - the name of the direction e.g. 'North'
     /// * `exit_id` - the name of the exit, must match the id of a Room.
     pub fn add_exit(&mut self, direction: String, exit_id: String) {
@@ -164,9 +165,9 @@ impl<'a> Room {
     }
 
     /// Determines if the direction is valid
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `direction` - the direction to check
     pub fn has_exit(&self, direction: &str) -> bool {
         let lower = direction.to_lowercase();
@@ -179,9 +180,9 @@ impl<'a> Room {
     }
 
     /// Adds the item to the room's inventory
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `item` - the item to add
     pub fn add_item(&mut self, item: Item) {
         self.items.push(item);
@@ -217,12 +218,12 @@ impl<'a> Room {
     }
 
     /// Takes an item from the room and adds it the players inventory
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `player` - The player who will receive the item
     /// * `item_name` - The name of the item to be take
-    /// 
+    ///
     /// # Errors
     /// The item does not exist in the player's current location
     pub fn take_item(&mut self, player: &mut Player, item_name: String) -> Result<String, String> {
@@ -250,11 +251,12 @@ pub struct Player {
 
 /// Lists the inventory currently carried by the player
 impl Player {
-    pub fn list_inventory(&self) -> String {        
-        self.inventory.iter().fold(String::new(), |mut agg, item| { 
-                agg.push_str(&*item.name);
-                agg.push_str("\n");
-                agg 
+    /// List the items carried by the player
+    pub fn list_inventory(&self) -> String {
+        self.inventory.iter().fold(String::new(), |mut agg, item| {
+            agg.push_str(&*item.name);
+            agg.push_str("\n");
+            agg
         })
     }
 }

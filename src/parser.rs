@@ -5,6 +5,16 @@ use nom::error::ErrorKind;
 use nom::sequence::*;
 
 type ParserPairResult<'a> = Result<(&'a str, (&'a str, &'a str)), nom::Err<(&'a str, ErrorKind)>>;
+type ParserTwoPairResult<'a> = Result<
+    (
+        &'a str,
+        (
+            (&'a str, &'a str),
+            (&'a str, &'a str)
+        )
+    ),
+    nom::Err<(&'a str, ErrorKind)>
+>;
 
 pub enum Action {
     Exit,
@@ -14,8 +24,7 @@ pub enum Action {
     Move(String),
     Take(String),
     Put(String),
-    Use(String),
-    Interact(String, String),
+    Use(String, String),
     Unknown,
 }
 
@@ -29,7 +38,7 @@ pub fn parse_input(user_input: &str) -> Action {
     let trimmed = user_input.trim();
 
     let actions: Vec<fn(&str) -> Option<Action>> =
-        vec![is_exit, is_load, is_save, is_inventory, is_move, is_take];
+        vec![is_exit, is_load, is_save, is_inventory, is_move, is_take, is_use];
 
     // Here, we iterate through a list of higher order functions and
     // effectively request the first function to return a Some(). This uses the
@@ -107,6 +116,36 @@ fn is_take(input: &str) -> Option<Action> {
         Err(_err) => None,
     }
 }
+
+fn is_use(input: &str) -> Option<Action> {
+    let use_parser = separated_pair(
+        tag_no_case("use"),
+        space1,
+        alpha1);
+
+    let on_parser = separated_pair(
+        tag_no_case("on"),
+        space1,
+        alpha1);
+
+    let combined_parser = separated_pair(
+        use_parser,
+        space1,
+        on_parser
+    );        
+
+    // Result<(&'<empty> str, ((&'<empty> str, &'<empty> str), (&'<empty> str, &'<empty> str)))
+    let parser_result: ParserTwoPairResult = combined_parser(input);
+
+    match parser_result {
+        Ok(res) => {
+            let (_remaining_input, ((_use, subject), (_on, target))) = res;
+            Some(Action::Use(subject.to_string(), target.to_string()))
+        },        
+        Err(_err) => None,
+    }
+}
+
 
 fn deconstruct_pair_result(result: (&str, (&str, &str))) -> String {
      let (_remaining_input, (_first, second)) = result;

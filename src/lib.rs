@@ -6,6 +6,7 @@ extern crate log;
 #[macro_use]
 pub mod world_building;
 pub mod parser;
+pub mod entities;
 
 use std::io::{self};
 use world_building::*;
@@ -57,30 +58,35 @@ fn let_there_be_light() -> World {
                 "entrance",
                 "The dungeon entrance",
                 items = [],
+                features = [],
                 exits = ["north" => "corridor"]
             ]
             [
                 "corridor",
-                "A long corridor with a locked door at the north end",
+                "A long corridor",
                 items = [],
+                features = ["north door"],
                 exits = ["south" => "entrance" "west" => "storeroom"]
             ]
             [
                 "storeroom",
                 "An old dusty storeroom",
                 items = ["key", "tinderbox"],
+                features = [],
                 exits = ["east" => "corridor"]
             ]
             [
                 "dark room",
                 "A dimly lit room with unlit torches on the walls",
                 items = [],
+                features = [],
                 exits = ["south" => "corridor"]
             ]
             [
                 "treasure room",
                 "A room full of shiney things",
                 items = ["phat loot"],
+                features = [],
                 exits = ["south" => "dark room"]
             ]
         ]        
@@ -110,6 +116,7 @@ fn perform_action(world: &mut World, user_input: &str) -> Result<String, String>
         Action::Inventory => Ok(world.player.list_inventory()),
         Action::Move(direction) => acceptable_error(world.move_player(&direction)),
         Action::Take(item_name) => acceptable_error(world.take_item(&*item_name)),
+        Action::Use(subject, target) => world.use_item(&subject, &target),
         Action::Unknown => Ok("You cannot do that".to_string()),
         _ => Ok("You cannot do that".to_string())
     }    

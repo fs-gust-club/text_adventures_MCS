@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
+use crate::entities::item::{Item};
+use crate::entities::interactive;
+
 /// Holds the state of the world
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct World {
@@ -132,6 +135,37 @@ impl World {
             None => Err("Room does not exist".to_string()),
         }
     }
+
+
+    pub fn use_item(&mut self, subject: &str, target: &str) -> Result<String, String> {
+        match self.get_player_room() {
+            Some(room) => {
+                // ####### THIS ISNT FINISHED YET!!!!
+                if room.has_feature(target) && self.player.has_item(subject) {
+                    let mut feature = &room.features.get(target);
+                    let item = &self.player.inventory.get(subject);
+                    interactive::use_item(item, &mut feature, room);
+                    Ok("Done".to_owned())
+                } else {
+                    Err("You cannot do that here".to_string())
+                }
+            }
+            None => Err("Can't find the room the player is in.".to_string())
+        }
+        
+    }
+}
+
+/// Describes an attribute of a room, which will eventually hold behaviour
+#[derive(Debug, new, Serialize, Deserialize)]
+pub struct Feature {
+    name: String,
+}
+
+impl<'a> Feature {
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
 }
 
 /// Describes a location and its contents
@@ -146,6 +180,8 @@ pub struct Room {
     exits: HashMap<String, String>,
     #[new(default)]
     items: Vec<Item>,
+    #[new(default)]
+    features: Vec<Feature>,
 }
 
 impl<'a> Room {
@@ -174,9 +210,19 @@ impl<'a> Room {
         self.exits.contains_key(&*lower)
     }
 
+    /// Checks if the room has a feature
+    pub fn has_feature(&self, feature_name: &str) -> bool {
+        let lower = feature_name.to_lowercase();
+        self.features.iter().any(|f| f.name == lower)
+    }
+
     /// Gets the names of the items in the room
     pub fn get_item_names(&self) -> impl Iterator<Item = String> + '_ {
         self.items.iter().map(|i| i.name.to_string())
+    }
+
+    pub fn get_feature_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.features.iter().map(|i| i.name.to_string())
     }
 
     /// Adds the item to the room's inventory
@@ -205,6 +251,14 @@ impl<'a> Room {
 
         let exits = format!("\nExits are {exits}", exits = self.get_exits().join(", "));
         output.push_str(&exits);
+
+        if self.features.len() > 0 {
+            let features = format!(
+                "\nThere is {feature_names}",
+                feature_names = self.get_feature_names().join(", ")
+            );
+            output.push_str(&features);
+        }
 
         if self.has_items() {
             let items = format!(
@@ -236,6 +290,20 @@ impl<'a> Room {
             None => Err(format!("No item of type {} is present", item_name)),
         }
     }
+
+    pub fn add_feature(&mut self, feature: Feature) {
+        self.features.push(feature);
+    }
+
+    pub fn remove_feature(&mut self, feature_name: String) -> Result<String, String> {
+        match self.features.iter().position(|i| i.name == feature_name) {
+            Some(index) => {
+                self.features.remove(index);
+                Ok(feature_name)
+            }
+            None => Err(format!("No feature of type {} is present", feature_name)),
+        }
+    }
 }
 
 /// Represents a player
@@ -259,14 +327,14 @@ impl Player {
             agg
         })
     }
+    
+    /// Checks if the player has an item of that name
+    pub fn has_item(&self, item_name: &str) -> bool {
+        let lower = item_name.to_lowercase();
+        self.inventory.iter().any(|i| i.name == lower)
+    }
 }
 
-/// An item
-#[derive(Debug, new, Serialize, Deserialize)]
-pub struct Item {
-    /// The item name
-    pub name: String,
-}
 
 /// Create a `World`
 macro_rules! shaper_of_worlds {
@@ -277,6 +345,7 @@ macro_rules! shaper_of_worlds {
                 $room_name:expr,
                 $room_description:expr,
                 items=[$($item:expr$(,)*)*],
+                features=[$($feature:expr$(,)*)*],
                 exits=[$($dir:expr => $dest:expr)*]
             ])+
         ]
@@ -287,8 +356,12 @@ macro_rules! shaper_of_worlds {
             $(
                 let mut room = Room::new($room_name.to_lowercase().to_string(), $room_description.to_string());
                 $(
-                    let item = Item::new($item.to_string());
+                    let item = crate::entities::item::Item::new($item.to_string());
                     room.add_item(item);
+                )*
+                $(
+                    let feature = Feature::new($feature.to_string());
+                    room.add_feature(feature);
                 )*
                 $(
                     room.add_exit($dir.to_string(), $dest.to_lowercase().to_string());

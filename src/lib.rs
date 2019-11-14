@@ -106,6 +106,6 @@ fn perform_action(world: &mut World, user_input: &str) -> Result<String, String>
 fn acceptable_error(error: Result<String, String>) -> Result<String, String> {
     match error {
         Ok(msg) => Ok(msg),
-        Err(msg) => Err(msg)
+        Err(msg) => Ok(msg)
     }
 }

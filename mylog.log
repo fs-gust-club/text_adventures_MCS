@@ -1,2 +1,0 @@
-20:21:55 [ INFO] move_player(self: World { locations: {"b": Room { id: "b", description: "This is B", exits: {"south": "a"}, items: [] }, "a": Room { id: "a", description: "The dungeon entrance", exits: {"west": "c", "north": "b"}, items: [Item { name: "Stick" }] }, "c": Room { id: "c", description: "This is C", exits: {"east": "a"}, items: [] }}, player_location: "a", player: Player { name: "Bob", inventory: [Item { name: "Stone" }] } },direction: "north")
-20:21:55 [ INFO] move_player() => "You have moved north"

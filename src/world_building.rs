@@ -299,3 +299,7 @@ macro_rules! shaper_of_worlds {
         }
     };
 }
+
+#[cfg(test)]
+#[path = "./world_building_tests.rs"]
+mod world_building_tests;

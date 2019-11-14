@@ -1,4 +1,4 @@
-use text_adventure::world_building::{Item, Room, World};
+use super::Room;
 
 #[test]
 fn test_add_exit() {

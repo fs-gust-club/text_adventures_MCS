@@ -3,7 +3,6 @@ use nom::bytes::complete::*;
 use nom::character::complete::*;
 use nom::error::ErrorKind;
 use nom::sequence::*;
-use nom::IResult;
 
 type ParserPairResult<'a> = Result<(&'a str, (&'a str, &'a str)), nom::Err<(&'a str, ErrorKind)>>;
 
@@ -20,11 +19,12 @@ pub enum Action {
     Unknown,
 }
 
-/// Apply parser combinator to user's input
+/// Apply parsers to user's input until there is a match or all known
+/// commands have been tried.
 /// 
 /// # Arguments
 /// 
-/// * `user_input` - the user input to parse for recognised actions
+/// * `user_input` - the user input to parse for recognized actions
 pub fn parse_input(user_input: &str) -> Action {
     let trimmed = user_input.trim();
 
@@ -43,72 +43,72 @@ pub fn parse_input(user_input: &str) -> Action {
 }
 
 fn is_exit(input: &str) -> Option<Action> {
-    let parser = pair(alt((tag_no_case("exit"), tag_no_case("quit"))), space0);
-
-    let a: ParserPairResult = parser(input);
-
-    match a {
+    let exit_parser = pair(alt((tag_no_case("exit"), tag_no_case("quit"))), space0);
+    let parser_result: ParserPairResult = exit_parser(input);
+    match parser_result {
         Ok(_result) => Some(Action::Exit),
         Err(_err) => None,
     }
 }
 
 fn is_inventory(input: &str) -> Option<Action> {
-    let a: IResult<&str, &str> = alt((tag_no_case("inventory"), tag_no_case("inv")))(input);
-    match a {
+    let inv_parser = pair(alt((tag_no_case("inventory"), tag_no_case("inv"))), space0);
+    let parser_result: ParserPairResult = inv_parser(input);
+    match parser_result {
         Ok(_result) => Some(Action::Inventory),
         Err(_err) => None,
     }
 }
 
 fn is_load(input: &str) -> Option<Action> {
-    let t: IResult<&str, &str> = tag_no_case("load")(input);
-    match t {
+    let load_parser = pair(tag_no_case("load"), space0);
+    let parser_result: ParserPairResult = load_parser(input);
+    match parser_result {
         Ok(_result) => Some(Action::Load),
         Err(_error) => None,
     }
 }
 
 fn is_save(input: &str) -> Option<Action> {
-    let t: IResult<&str, &str> = tag_no_case("save")(input);
-    match t {
-        Ok(_result) => Some(Action::Load),
+    let save_parser = pair(tag_no_case("save"), space0);
+    let parser_result: ParserPairResult = save_parser(input);    
+    match parser_result {
+        Ok(_result) => Some(Action::Save),
         Err(_error) => None,
     }
 }
 
 fn is_move(input: &str) -> Option<Action> {
-    let parser = separated_pair(
+    let move_parser = separated_pair(
         alt((tag_no_case("move"), tag_no_case("go"))),
         space1,
         alpha1,
     );
 
-    let result: ParserPairResult = parser(input);
+    let parser_result: ParserPairResult = move_parser(input);
 
-    match result {
-        Ok(res) => {
-            let (_remaining_input, (_first, second)) = res;
-            Some(Action::Move(second.to_string()))
-        }
+    match parser_result {
+        Ok(res) => Some(Action::Move(deconstruct_pair_result(res))),    
         Err(_err) => None,
     }
 }
 
 fn is_take(input: &str) -> Option<Action> {
-    let parser = separated_pair(
+    let take_parser = separated_pair(
         alt((tag_no_case("take"), tag_no_case("get"))),
         space1,
         alpha1,
     );
 
-    let result: ParserPairResult = parser(input);
+    let parser_result: ParserPairResult = take_parser(input);
 
-    match result {
-        Ok(res) => {
-            let (_remaining_input, (_first, second)) = res;
-            Some(Action::Take(second.to_string()))
-        }
+    match parser_result {
+        Ok(res) => Some(Action::Move(deconstruct_pair_result(res))),        
         Err(_err) => None,
     }
+}
+
+fn deconstruct_pair_result(result: (&str, (&str, &str))) -> String {
+     let (_remaining_input, (_first, second)) = result;
+     second.to_string()
 }

@@ -103,7 +103,7 @@ fn is_take(input: &str) -> Option<Action> {
     let parser_result: ParserPairResult = take_parser(input);
 
     match parser_result {
-        Ok(res) => Some(Action::Move(deconstruct_pair_result(res))),        
+        Ok(res) => Some(Action::Take(deconstruct_pair_result(res))),        
         Err(_err) => None,
     }
 }

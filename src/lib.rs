@@ -51,25 +51,37 @@ pub fn start() {
 /// Create the initial world state
 fn let_there_be_light() -> World {
     let mut world = shaper_of_worlds!(
-        location = "A",
+        location = "entrance",
         rooms = [
             [
-                "A",
+                "entrance",
                 "The dungeon entrance",
-                items = ["Stick", "Stone"],
-                exits = ["north" => "B" "west" => "c"]
+                items = [],
+                exits = ["north" => "corridor"]
             ]
             [
-                "B",
-                "This is B",
+                "corridor",
+                "A long corridor with a locked door at the north end",
                 items = [],
-                exits = ["south" => "A"]
+                exits = ["south" => "entrance" "west" => "storeroom"]
             ]
             [
-                "C",
-                "This is C",
+                "storeroom",
+                "An old dusty storeroom",
+                items = ["key", "tinderbox"],
+                exits = ["east" => "corridor"]
+            ]
+            [
+                "dark room",
+                "A dimly lit room with unlit torches on the walls",
                 items = [],
-                exits = ["east" => "A"]
+                exits = ["south" => "corridor"]
+            ]
+            [
+                "treasure room",
+                "A room full of shiney things",
+                items = ["phat loot"],
+                exits = ["south" => "dark room"]
             ]
         ]        
     );

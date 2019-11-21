@@ -13,13 +13,14 @@ use crate::entities::item::{Item};
 use crate::entities::interactive;
 
 /// Holds the state of the world
+use serde::{Deserialize, Serialize};
+
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct World {
     /// The rooms making up the world, stored by Room.id
     pub locations: HashMap<String, Room>,
     /// The id of the current player's location
     pub player_location: String,
-    /// The player
     pub player: Player,
 }
 
@@ -45,8 +46,7 @@ impl World {
         // If so, set the payers location to the pointed direction.
         // returns a result with Ok(new_location), Err(No Exit)
 
-        let new_room = self
-            .locations
+        let new_room = self.locations
             .get(&self.player_location)
             .and_then(|cl| cl.exits.get(direction));
 
@@ -166,6 +166,43 @@ impl<'a> Feature {
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
+
+    pub fn save_state(&self) -> Result<String, String> {
+        match serde_json::to_string(self) {
+            Ok(json) => match fs::write("savedata.json", json) {
+                Ok(_msg) => Ok("game saved".to_string()),
+                Err(err) => {
+                    error!("Error saving game {:?}", err);
+                    Err("could not save game".to_string())
+                }
+            },
+            Err(err) => {
+                error!("Error serializing game state {:?}", err);
+                Err("could not save game".to_string())
+            }
+        }
+    }
+
+    pub fn load_state(&mut self) -> Result<String, String> {
+        match fs::read_to_string("savedata.json") {
+            Ok(contents) => match serde_json::from_str::<World>(&*contents) {
+                Ok(new_world) => { 
+                    self.locations = new_world.locations;
+                    self.player = new_world.player;
+                    self.player_location = new_world.player_location;
+                    Ok("game loaded".to_string())
+                },
+                Err(err) => { 
+                    error!("Error loading game {:?}", err);
+                    Err("could not load game".to_string())
+                }
+            },
+            Err(err) => { 
+                error!("Error deserializing game state {:?}", err);
+                Err(format!("{:?}", err))
+            }
+        }
+    }
 }
 
 /// Describes a location and its contents
@@ -215,8 +252,6 @@ impl<'a> Room {
         let lower = feature_name.to_lowercase();
         self.features.iter().any(|f| f.name == lower)
     }
-
-    /// Gets the names of the items in the room
     pub fn get_item_names(&self) -> impl Iterator<Item = String> + '_ {
         self.items.iter().map(|i| i.name.to_string())
     }
@@ -333,6 +368,10 @@ impl Player {
         let lower = item_name.to_lowercase();
         self.inventory.iter().any(|i| i.name == lower)
     }
+
+#[derive(Debug, new, Serialize, Deserialize)]
+pub struct Item {
+    pub name: String,
 }
 
 
@@ -376,3 +415,4 @@ macro_rules! shaper_of_worlds {
 #[cfg(test)]
 #[path = "./world_building_tests.rs"]
 mod world_building_tests;
+}

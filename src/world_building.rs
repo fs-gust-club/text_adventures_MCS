@@ -1,11 +1,14 @@
 use itertools::Itertools;
 use log_derive::{logfn, logfn_inputs};
 use std::collections::HashMap;
+use std::fs;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct World {
     pub locations: HashMap<String, Room>,
     pub player_location: String,
+    pub player: Player,
 }
 
 impl World {
@@ -20,10 +23,11 @@ impl World {
         // If so, set the payers location to the pointed direction.
         // returns a result with Ok(new_location), Err(No Exit)
 
-        let current_location = self.locations.get(&self.player_location).unwrap();
-        warn!("Found location: {}", current_location.id);
+        let new_room = self.locations
+            .get(&self.player_location)
+            .and_then(|cl| cl.exits.get(direction));
 
-        match current_location.exits.get(direction) {
+        match new_room {
             Some(room_id) => {
                 self.player_location = room_id.clone();
                 Ok(format!("You have moved {}", direction))
@@ -35,9 +39,46 @@ impl World {
     pub fn get_player_room(&mut self) -> Option<&Room> {
         self.locations.get(&self.player_location)
     }
+
+    pub fn save_state(&self) -> Result<String, String> {
+        match serde_json::to_string(self) {
+            Ok(json) => match fs::write("savedata.json", json) {
+                Ok(_msg) => Ok("game saved".to_string()),
+                Err(err) => {
+                    error!("Error saving game {:?}", err);
+                    Err("could not save game".to_string())
+                }
+            },
+            Err(err) => {
+                error!("Error serializing game state {:?}", err);
+                Err("could not save game".to_string())
+            }
+        }
+    }
+
+    pub fn load_state(&mut self) -> Result<String, String> {
+        match fs::read_to_string("savedata.json") {
+            Ok(contents) => match serde_json::from_str::<World>(&*contents) {
+                Ok(new_world) => { 
+                    self.locations = new_world.locations;
+                    self.player = new_world.player;
+                    self.player_location = new_world.player_location;
+                    Ok("game loaded".to_string())
+                },
+                Err(err) => { 
+                    error!("Error loading game {:?}", err);
+                    Err("could not load game".to_string())
+                }
+            },
+            Err(err) => { 
+                error!("Error deserializing game state {:?}", err);
+                Err(format!("{:?}", err))
+            }
+        }
+    }
 }
 
-#[derive(Debug, new)]
+#[derive(Debug, new, Serialize, Deserialize)]
 pub struct Room {
     pub id: String,
     pub description: String,
@@ -54,6 +95,11 @@ impl<'a> Room {
 
     pub fn get_exits(&self) -> impl Iterator<Item = &String> {
         self.exits.keys()
+    }
+
+    pub fn has_exit(&self, exit_name: &str) -> bool {
+        let lower = exit_name.to_lowercase();
+        self.exits.contains_key(&*lower)
     }
 
     pub fn get_item_names(&self) -> impl Iterator<Item = String> + '_ {
@@ -102,14 +148,14 @@ impl<'a> Room {
     }
 }
 
-#[derive(Default, Debug, new)]
+#[derive(Default, Debug, new, Serialize, Deserialize)]
 pub struct Player {
     pub name: String,
     #[new(default)]
     pub inventory: Vec<Item>,
 }
 
-#[derive(Debug, new)]
+#[derive(Debug, new, Serialize, Deserialize)]
 pub struct Item {
     pub name: String,
 }

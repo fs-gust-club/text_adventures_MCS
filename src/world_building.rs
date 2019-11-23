@@ -88,7 +88,7 @@ impl World {
     #[logfn(Info)]
     pub fn load_state(&mut self) -> Result<String, String> {
         match fs::read_to_string("savedata.json") {
-            Ok(contents) => match serde_json::from_str::<World>(&*contents) {
+            Ok(contents) => match serde_json::from_str::<World>(&contents) {
                 Ok(new_world) => {
                     self.locations = new_world.locations;
                     self.player = new_world.player;

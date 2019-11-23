@@ -5,12 +5,13 @@ extern crate log;
 
 #[macro_use]
 pub mod world_building;
-pub mod parser;
 pub mod entities;
+pub mod parser;
 
+use entities::Player;
+use parser::*;
 use std::io::{self};
 use world_building::*;
-use parser::*;
 
 /// Create the world and start the main loop
 pub fn start() {
@@ -89,7 +90,7 @@ fn let_there_be_light() -> World {
                 features = [],
                 exits = ["south" => "dark room"]
             ]
-        ]        
+        ]
     );
 
     let player = Player::new("Bob".to_string());
@@ -98,17 +99,17 @@ fn let_there_be_light() -> World {
 }
 
 /// Parse the user input and perform the action if possible
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `world` - the current world state
 /// * `user_input` - the user command
-/// 
+///
 /// # Errors
-/// 
+///
 /// The user command is not valid
 fn perform_action(world: &mut World, user_input: &str) -> Result<String, String> {
-    let action = parser::parse_input(user_input);    
+    let action = parser::parse_input(user_input);
     match action {
         parser::Action::Exit => Err("Exiting".to_string()),
         Action::Save => world.save_state(),
@@ -118,13 +119,13 @@ fn perform_action(world: &mut World, user_input: &str) -> Result<String, String>
         Action::Take(item_name) => acceptable_error(world.take_item(&*item_name)),
         Action::Use(subject, target) => world.use_item(&subject, &target),
         Action::Unknown => Ok("You cannot do that".to_string()),
-        _ => Ok("You cannot do that".to_string())
-    }    
+        _ => Ok("You cannot do that".to_string()),
+    }
 }
 
 fn acceptable_error(error: Result<String, String>) -> Result<String, String> {
     match error {
         Ok(msg) => Ok(msg),
-        Err(msg) => Ok(msg)
+        Err(msg) => Ok(msg),
     }
 }

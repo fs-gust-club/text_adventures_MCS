@@ -137,8 +137,17 @@ impl World {
             Some(room) => {
                 // ####### THIS ISNT FINISHED YET!!!!
                 if room.has_feature(target) && self.player.has_item(subject) {
-                    let mut feature = &room.features.get(target);
-                    let item = &self.player.inventory.get(subject);
+                    let mut feature = &room
+                        .features
+                        .iter()
+                        .find(|feature| feature.name == target)
+                        .expect("Failed to locate feature in room!");
+                    let item = &self
+                        .player
+                        .inventory
+                        .iter()
+                        .find(|item| item.name == subject)
+                        .expect("Failed to locate item in inventory");
                     interactive::use_item(item, &mut feature, room);
                     Ok("Done".to_owned())
                 } else {

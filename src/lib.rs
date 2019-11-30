@@ -5,13 +5,14 @@ extern crate log;
 
 #[macro_use]
 pub mod world_building;
+pub mod arena;
 pub mod entities;
 pub mod parser;
 
 use entities::Player;
-use parser::*;
-use std::io::{self};
-use world_building::*;
+use parser::Action;
+use std::io;
+use world_building::World;
 
 /// Create the world and start the main loop
 pub fn start() {
@@ -52,7 +53,7 @@ pub fn start() {
 
 /// Create the initial world state
 fn let_there_be_light() -> World {
-    let mut world = shaper_of_worlds!(
+    let world = shaper_of_worlds!(
         location = "entrance",
         rooms = [
             [
@@ -94,8 +95,8 @@ fn let_there_be_light() -> World {
     );
 
     let player = Player::new("Bob".to_string());
-    world.player = player;
-    return world;
+    world.player.replace(player);
+    world
 }
 
 /// Parse the user input and perform the action if possible
@@ -108,13 +109,13 @@ fn let_there_be_light() -> World {
 /// # Errors
 ///
 /// The user command is not valid
-fn perform_action(world: &mut World, user_input: &str) -> Result<String, String> {
+fn perform_action(world: &World, user_input: &str) -> Result<String, String> {
     let action = parser::parse_input(user_input);
     match action {
         parser::Action::Exit => Err("Exiting".to_string()),
         Action::Save => world.save_state(),
         Action::Load => world.load_state(),
-        Action::Inventory => Ok(world.player.list_inventory()),
+        Action::Inventory => Ok(world.get_player().list_inventory()),
         Action::Move(direction) => acceptable_error(world.move_player(&direction)),
         Action::Take(item_name) => acceptable_error(world.take_item(&*item_name)),
         Action::Use(subject, target) => world.use_item(&subject, &target),

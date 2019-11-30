@@ -1,6 +1,6 @@
 extern crate simplelog;
 
-use simplelog::*;
+use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 use std::fs::File;
 use text_adventure::start;
 

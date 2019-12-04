@@ -3,27 +3,25 @@
 //! The `world_building` module handles the types that
 //! describe the world and its current state.
 
-use log_derive::{logfn, logfn_inputs};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
+// use log_derive::{logfn, logfn_inputs};
+use log_derive::{logfn};
+// use serde::{Deserialize, Serialize};
+// use std::collections::HashMap;
+// use std::fs;
+// use std::cell::RefCell;
 
-use crate::entities::{interactive, Player, Room};
 
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct World {
-    /// The rooms making up the world, stored by Room.id
-    pub locations: HashMap<String, Room>,
-    /// The id of the current player's location
-    pub player_location: String,
+// use crate::entities::{interactive, Player, Room};
+use crate::entities::{Player, Room};
+
+// #[derive(Default, Debug)]
+#[derive(Debug)]
+pub struct World<'a> {
+    pub player_location: &'a Room<'a>,
     pub player: Player,
 }
 
-impl World {
-    /// Adds a location to the world
-    pub fn add_location(&mut self, location: Room) {
-        self.locations.insert(location.id.clone(), location);
-    }
+impl<'a> World<'a> {
 
     /// Move the player to a new location
     ///
@@ -35,29 +33,22 @@ impl World {
     /// # Errors
     /// The location is invalid
     #[logfn(Info)]
-    #[logfn_inputs(Info)]
+    // #[logfn_inputs(Info)]
     pub fn move_player(&mut self, direction: &String) -> Result<String, String> {
         // Check whether our current location has an exit that matches direction.
         // If so, set the payers location to the pointed direction.
         // returns a result with Ok(new_location), Err(No Exit)
 
-        let new_room = self
-            .locations
-            .get(&self.player_location)
-            .and_then(|cl| cl.exits.get(direction));
+        let x = self.player_location.exits.borrow(); // assign here so that borrowed hashmap won't go OOS before end of function
+        let new_room = x.get(direction);
 
         match new_room {
-            Some(room_id) => {
-                self.player_location = room_id.clone();
+            Some(room) => {
+                self.player_location = room;
                 Ok(format!("You have moved {}", direction))
             }
             None => Err(format!("{} is not a valid direction", direction)),
         }
-    }
-
-    /// Gets a mutable reference to the room the player is currently in
-    pub fn get_player_room(&mut self) -> Option<&mut Room> {
-        self.locations.get_mut(&self.player_location)
     }
 
     /// Save the state of the game to a local file
@@ -66,7 +57,7 @@ impl World {
     /// Could not save the game
     #[logfn(Info)]
     pub fn save_state(&self) -> Result<String, String> {
-        match serde_json::to_string(self) {
+       /* match serde_json::to_string(self) {
             Ok(json) => match fs::write("savedata.json", json) {
                 Ok(_msg) => Ok("game saved".to_string()),
                 Err(err) => {
@@ -78,16 +69,17 @@ impl World {
                 error!("Error serializing game state {:?}", err);
                 Err("could not save game".to_string())
             }
-        }
+        }*/
+        Err("Save not implimented".to_string())
     }
 
     /// Load the state of the game from a local file
     ///
     /// # Errors
     /// Could not load the game
-    #[logfn(Info)]
+    //#[logfn(Info)]
     pub fn load_state(&mut self) -> Result<String, String> {
-        match fs::read_to_string("savedata.json") {
+        /*match fs::read_to_string("savedata.json") {
             Ok(contents) => match serde_json::from_str::<World>(&contents) {
                 Ok(new_world) => {
                     self.locations = new_world.locations;
@@ -104,7 +96,8 @@ impl World {
                 error!("Error deserializing game state {:?}", err);
                 Err(format!("{:?}", err))
             }
-        }
+        }*/
+        Err("Load not implemented".to_owned())
     }
 
     /// Take the specified item from the players current location
@@ -112,56 +105,54 @@ impl World {
     /// # Arguments
     ///
     /// * `item_name` - the name of the item to take
-    pub fn take_item(&mut self, item_name: &str) -> Result<String, String> {
-        match self.get_player_room() {
-            Some(room) => {
-                match room
-                    .items
-                    .iter()
-                    .position(|i| i.name.to_lowercase() == item_name.to_lowercase())
-                {
-                    Some(index) => {
-                        let item = room.items.remove(index);
-                        self.player.inventory.push(item);
-                        return Ok(format!("Picked up {}", item_name));
-                    }
-                    None => Err(format!("No item of type {} is present", item_name)),
-                }
+    pub fn take_item(&self, item_name: &str) -> Result<String, String> {
+        match self.player_location
+            .items
+            .borrow()
+            .iter()
+            .position(|i| i.name.to_lowercase() == item_name.to_lowercase())
+        {
+            Some(index) => {
+                let item = self.player_location.items.borrow_mut().remove(index);
+                self.player.inventory.borrow_mut().push(item);
+                return Ok(format!("Picked up {}", item_name));
             }
-            None => Err("Room does not exist".to_string()),
+            None => Err(format!("No item of type {} is present", item_name)),
         }
     }
 
     pub fn use_item(&mut self, subject: &str, target: &str) -> Result<String, String> {
-        match self.get_player_room() {
-            Some(room) => {
-                // ####### THIS ISNT FINISHED YET!!!!
-                if room.has_feature(target) && self.player.has_item(subject) {
-                    let mut feature = &room
-                        .features
-                        .iter()
-                        .find(|feature| feature.name == target)
-                        .expect("Failed to locate feature in room!");
-                    let item = &self
-                        .player
-                        .inventory
-                        .iter()
-                        .find(|item| item.name == subject)
-                        .expect("Failed to locate item in inventory");
-                    interactive::use_item(item, &mut feature, room);
-                    Ok("Done".to_owned())
-                } else {
-                    Err("You cannot do that here".to_string())
-                }
-            }
-            None => Err("Can't find the room the player is in.".to_string()),
-        }
+        // match self.get_player_room() {
+        //     Some(room) => {
+        //         // ####### THIS ISNT FINISHED YET!!!!
+        //         if room.has_feature(target) && self.player.has_item(subject) {
+        //             let mut feature = &room
+        //                 .features
+        //                 .iter()
+        //                 .find(|feature| feature.name == target)
+        //                 .expect("Failed to locate feature in room!");
+        //             let item = &self
+        //                 .player
+        //                 .inventory
+        //                 .iter()
+        //                 .find(|item| item.name == subject)
+        //                 .expect("Failed to locate item in inventory");
+        //             interactive::use_item(item, &mut feature, room);
+        //             Ok("Done".to_owned())
+        //         } else {
+        //             Err("You cannot do that here".to_string())
+        //         }
+        //     }
+        //     None => Err("Can't find the room the player is in.".to_string()),
+        // }
+        Ok("Not Implemented".to_owned())
     }
 }
 
 /// Create a `World`
 macro_rules! shaper_of_worlds {
     (
+        arena = $arena:expr,
         location = $player_location:expr,
         rooms = [
             $([
@@ -174,10 +165,11 @@ macro_rules! shaper_of_worlds {
         ]
     ) => {
         {
-            let mut world = World::default();
-            world.player_location = $player_location.to_lowercase().to_string();
+            // let room_arena = typed_arena::Arena::new();
+            let mut room_lookup: std::collections::HashMap<String, &crate::entities::Room> = std::collections::HashMap::new();
+            let mut destination_lookup = std::collections::HashMap::new();
             $(
-                let mut room = crate::entities::Room::new($room_name.to_lowercase().to_string(), $room_description.to_string());
+                let room = $arena.alloc(entities::Room::new($room_name.to_lowercase().to_string(), $room_description.to_string()));
                 $(
                     let item = crate::entities::Item::new($item.to_string());
                     room.add_item(item);
@@ -187,11 +179,21 @@ macro_rules! shaper_of_worlds {
                     room.add_feature(feature);
                 )*
                 $(
-                    room.add_exit($dir.to_string(), $dest.to_lowercase().to_string());
+                    destination_lookup.entry($room_name.clone()).or_insert(Vec::new()).push(($dir, $dest.to_lowercase()));
                 )*
-                world.add_location(room);
+                room_lookup.insert($room_name.to_string(), room);
             )+
-            world
+            for (room_name, destinations) in destination_lookup.iter() {
+                let room = room_lookup.get(&room_name.to_string()).unwrap();
+                for (direction, destination_name) in destinations {
+                    let other_room = room_lookup.get(&destination_name.to_string()).unwrap();
+                    room.add_exit(direction.to_string(), other_room);
+                }
+            }
+            World {
+                player_location: room_lookup.values().next().unwrap(),
+                player: Player::default()
+            }
         }
     };
 }

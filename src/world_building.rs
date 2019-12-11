@@ -165,8 +165,11 @@ macro_rules! shaper_of_worlds {
                     room.add_exit(direction.to_string(), other_room);
                 }
             }
+
+            let initial_location = room_lookup.get($player_location).unwrap();
+
             World {
-                player_location: room_lookup.values().next().unwrap(),
+                player_location: initial_location,
                 player: Player::default()
             }
         }

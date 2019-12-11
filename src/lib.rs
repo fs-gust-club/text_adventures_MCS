@@ -63,7 +63,7 @@ fn let_there_be_light<'a>(arena: &'a Arena<Room<'a>>) -> World<'a> {
                 "corridor",
                 "A long corridor",
                 items = [],
-                features = ["north door"],
+                features = ["north_door"],
                 exits = ["south" => "entrance" "west" => "storeroom"]
             ]
             [
@@ -83,7 +83,7 @@ fn let_there_be_light<'a>(arena: &'a Arena<Room<'a>>) -> World<'a> {
             [
                 "treasure room",
                 "A room full of shiney things",
-                items = ["phat loot"],
+                items = ["phat_loot"],
                 features = [],
                 exits = ["south" => "dark room"]
             ]

@@ -4,12 +4,11 @@
 //! describe the world and its current state.
 
 // use log_derive::{logfn, logfn_inputs};
-use log_derive::{logfn};
+use log_derive::logfn;
 // use serde::{Deserialize, Serialize};
 // use std::collections::HashMap;
 // use std::fs;
 // use std::cell::RefCell;
-
 
 // use crate::entities::{interactive, Player, Room};
 use crate::entities::{Player, Room};
@@ -22,7 +21,6 @@ pub struct World<'a> {
 }
 
 impl<'a> World<'a> {
-
     /// Move the player to a new location
     ///
     /// # Arguments
@@ -57,7 +55,7 @@ impl<'a> World<'a> {
     /// Could not save the game
     #[logfn(Info)]
     pub fn save_state(&self) -> Result<String, String> {
-       /* match serde_json::to_string(self) {
+        /* match serde_json::to_string(self) {
             Ok(json) => match fs::write("savedata.json", json) {
                 Ok(_msg) => Ok("game saved".to_string()),
                 Err(err) => {
@@ -106,14 +104,14 @@ impl<'a> World<'a> {
     ///
     /// * `item_name` - the name of the item to take
     pub fn take_item(&self, item_name: &str) -> Result<String, String> {
-        match self.player_location
-            .items
-            .borrow()
+        let mut items = self.player_location.items.borrow_mut();
+
+        match items
             .iter()
             .position(|i| i.name.to_lowercase() == item_name.to_lowercase())
         {
             Some(index) => {
-                let item = self.player_location.items.borrow_mut().remove(index);
+                let item = items.remove(index);
                 self.player.inventory.borrow_mut().push(item);
                 return Ok(format!("Picked up {}", item_name));
             }
@@ -122,29 +120,6 @@ impl<'a> World<'a> {
     }
 
     pub fn use_item(&mut self, subject: &str, target: &str) -> Result<String, String> {
-        // match self.get_player_room() {
-        //     Some(room) => {
-        //         // ####### THIS ISNT FINISHED YET!!!!
-        //         if room.has_feature(target) && self.player.has_item(subject) {
-        //             let mut feature = &room
-        //                 .features
-        //                 .iter()
-        //                 .find(|feature| feature.name == target)
-        //                 .expect("Failed to locate feature in room!");
-        //             let item = &self
-        //                 .player
-        //                 .inventory
-        //                 .iter()
-        //                 .find(|item| item.name == subject)
-        //                 .expect("Failed to locate item in inventory");
-        //             interactive::use_item(item, &mut feature, room);
-        //             Ok("Done".to_owned())
-        //         } else {
-        //             Err("You cannot do that here".to_string())
-        //         }
-        //     }
-        //     None => Err("Can't find the room the player is in.".to_string()),
-        // }
         Ok("Not Implemented".to_owned())
     }
 }

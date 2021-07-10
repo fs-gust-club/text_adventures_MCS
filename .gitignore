@@ -30,4 +30,4 @@ tags
 
 .vscode
 
-.log
+*.log

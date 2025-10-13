@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate derive_new;
-#[macro_use]
+// #[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -8,26 +8,22 @@ pub mod world_building;
 pub mod entities;
 pub mod parser;
 
-use entities::Player;
+use entities::{Room, Player};
 use parser::*;
 use std::io::{self};
 use world_building::*;
+use typed_arena::Arena;
 
 /// Create the world and start the main loop
 pub fn start() {
-    let mut world = let_there_be_light();
+    let room_arena = Arena::new();
+    let mut world = let_there_be_light(&room_arena);
 
     println!("Welcome");
 
     loop {
-        // Write output
-        match world.get_player_room() {
-            None => {
-                println!("Location does not exist");
-                break;
-            }
-            Some(room) => println!("{}", room.get_full_description()),
-        }
+        // Describe the current room
+        println!("{}", world.player_location.get_full_description());
 
         // Get input
         let mut user_input = String::new();
@@ -51,8 +47,9 @@ pub fn start() {
 }
 
 /// Create the initial world state
-fn let_there_be_light() -> World {
+fn let_there_be_light<'a>(arena: &'a Arena<Room<'a>>) -> World<'a> {
     let mut world = shaper_of_worlds!(
+        arena = arena,
         location = "entrance",
         rooms = [
             [
@@ -66,7 +63,7 @@ fn let_there_be_light() -> World {
                 "corridor",
                 "A long corridor",
                 items = [],
-                features = ["north door"],
+                features = ["north_door"],
                 exits = ["south" => "entrance" "west" => "storeroom"]
             ]
             [
@@ -86,7 +83,7 @@ fn let_there_be_light() -> World {
             [
                 "treasure room",
                 "A room full of shiney things",
-                items = ["phat loot"],
+                items = ["phat_loot"],
                 features = [],
                 exits = ["south" => "dark room"]
             ]
@@ -95,7 +92,7 @@ fn let_there_be_light() -> World {
 
     let player = Player::new("Bob".to_string());
     world.player = player;
-    return world;
+    world
 }
 
 /// Parse the user input and perform the action if possible
